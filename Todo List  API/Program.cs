@@ -1,3 +1,4 @@
+using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using Todo_List__API.DatabaseTables;
 using Todo_List__API.Repository;
@@ -18,6 +19,15 @@ builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddScoped<TodoRepository>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+
+
+builder.Services.AddHangfire(config =>
+    config.UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection"))
+);
+
+builder.Services.AddHangfireServer(); // Enables Hangfire background job processing
+
 
 var app = builder.Build();
 
@@ -38,6 +48,10 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
+
+// ? Enable Hangfire Dashboard for job monitoring
+app.UseHangfireDashboard();
+app.MapHangfireDashboard("/hangfire"); // Dashboard available at /hangfire
 
 app.MapControllers();
 

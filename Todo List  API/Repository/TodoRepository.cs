@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
+using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using Todo_List__API.Contracts;
 using Todo_List__API.DatabaseTables;
+using Todo_List__API.Email_Service;
 using Todo_List__API.Entity;
 
 namespace Todo_List__API.Repository
@@ -17,6 +19,19 @@ namespace Todo_List__API.Repository
             _mapper = mapper;
         }
 
+        //public async Task AddTodoAsync(TodoContract todoContact)
+        //{
+        //    // Map TodoContact to TodoEntity
+        //    var todoEntity = _mapper.Map<TodoEntity>(todoContact);
+
+        //    // Add the TodoEntity to the DbContext
+        //    await _dbContext.Todos.AddAsync(todoEntity);
+
+        //    // Save the changes to the database
+        //    await _dbContext.SaveChangesAsync();
+        //}
+
+
         public async Task AddTodoAsync(TodoContract todoContact)
         {
             // Map TodoContact to TodoEntity
@@ -27,6 +42,15 @@ namespace Todo_List__API.Repository
 
             // Save the changes to the database
             await _dbContext.SaveChangesAsync();
+
+            // Get the email from the TodoEntity
+            var userEmail = todoEntity.Email;
+
+            // Enqueue the email job to send the notification
+            if (!string.IsNullOrEmpty(userEmail))
+            {
+                BackgroundJob.Enqueue<TodoNotificationJob>(job => job.SendTodoNotificationAsync(userEmail, todoEntity.Title));
+            }
         }
 
         public async Task<List<TodoContract>> GetAllTodoList()
